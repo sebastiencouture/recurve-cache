@@ -1,5 +1,5 @@
 /*!
-recurve-cache.js - v0.1.0
+recurve-cache.js - v0.1.1
 Created by Sebastien Couture on 2015-03-21.
 
 git://github.com/sebastiencouture/recurve-cache.git
