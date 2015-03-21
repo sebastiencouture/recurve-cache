@@ -2,6 +2,7 @@
     "name": "recurve-cache",
     "author": "Sebastien Couture",
     "version": "0.0.0",
+    "description": "Simple cache Javascript library for the browser and Node.js",
     "repository": {
         "type": "git",
         "url": "git://github.com/sebastiencouture/recurve-cache.git"
