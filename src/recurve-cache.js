@@ -20,11 +20,22 @@
 }(this, function () {
     "use strict";
 
+    /**
+     * Count and cost based cache.
+     *
+     * Items are cached up to a total count and cost limit. Once either limits are reached then items
+     * are removed. Most costly items are removed first, as a tie breaker or if there are no costs
+     * then items are removed by least recently added.
+     *
+     * @param countLimit number of items to cache before starting to remove. Defaults to no limit
+     * @param totalCostLimit total cost of all items before starting to remove. Defaults to no limit
+     * @constructor
+     */
     function Cache(countLimit, totalCostLimit) {
-        if (isUndefined(countLimit)) {
+        if (isUndefined(countLimit) || null === countLimit) {
             countLimit = 0;
         }
-        if (isUndefined(totalCostLimit)) {
+        if (isUndefined(totalCostLimit) || null === totalCostLimit) {
             totalCostLimit = 0;
         }
 
@@ -34,11 +45,24 @@
     }
 
     Cache.prototype = {
+        /**
+         * Retrieve an item from the cache by key
+         *
+         * @param key key for the item to retrieve
+         * @returns {*} cached item, null if there is no item in the cache
+         */
         get: function(key) {
             var value = this._data[key];
             return value ? value.value : null;
         },
 
+        /**
+         * Set an item with an optional cost
+         *
+         * @param key key for the item, if the key is already being used then the item will be replaced
+         * @param value value to cache
+         * @param cost weight of the item. Most costly items will be evicted first. Defaults to no cost
+         */
         set: function(key, value, cost) {
             if (!key) {
                 return;
@@ -48,6 +72,10 @@
                 cost = 0;
             }
 
+            // delete so we don't preserve the previous order for this key
+            if (this._data[key]) {
+                delete this._data[key];
+            }
             this._data[key] = {value: value, cost: cost};
 
             if (this._countLimit || (this._totalCostLimit && cost)) {
@@ -55,9 +83,15 @@
             }
         },
 
+        /**
+         * Remove an item
+         *
+         * @param key
+         * @returns {boolean} true if an item was removed, false otherwise
+         */
         remove: function(key) {
             if (!key) {
-                return;
+                return false;
             }
 
             var exists = this._data.hasOwnProperty(key);
@@ -66,32 +100,63 @@
             return exists;
         },
 
+        /**
+         * Checks if an item exists
+         *
+         * @param key key of the item
+         * @returns {boolean} true if an item exists for the key, false otherwise
+         */
         exists: function(key) {
             return !!this._data[key];
         },
 
+        /**
+         * Clear out all items
+         */
         clear: function() {
             this._data = {};
         },
 
+        /**
+         * Set the count limit
+         *
+         * @param value total number of items allowed
+         */
         setCountLimit: function(value) {
             this._countLimit = value;
             evict(this);
         },
 
+        /**
+         * @returns {*} number of items allowed
+         */
         getCountLimit: function() {
             return this._countLimit;
         },
 
+        /**
+         * Set the total cost limit
+         *
+         * @param value total cost of items allowed
+         */
         setTotalCostLimit: function(value) {
             this._totalCostLimit = value;
             evict(this);
         },
 
+        /**
+         * @returns {*} total cost of items allowed
+         */
         getTotalCostLimit: function() {
             return this._totalCostLimit;
         },
 
+        /**
+         * Iterate through all items in order they are added. Equivalent to Object.forEach
+         *
+         * @param iterator callback for each key/value pair
+         * @param context callback context. Optional
+         */
         forEach: function(iterator, context) {
             forEach(this._data, function(value, key) {
                 iterator.call(context, value.value, key);
@@ -165,10 +230,12 @@
         }
         else {
             for (var key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    if (false === iterator.call(context, obj[key], key, obj)) {
-                        break;
-                    }
+                if (!obj.hasOwnProperty(key)) {
+                    continue;
+                }
+
+                if (false === iterator.call(context, obj[key], key, obj)) {
+                    break;
                 }
             }
         }

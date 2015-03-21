@@ -142,7 +142,7 @@ describe("cache", function() {
             expect(cache.get("c")).toEqual(3);
         });
 
-        it("should evict first in as tie breaker for most costly past limit", function(){
+        it("should evict least recently added in as a tie breaker for most costly past limit", function(){
             cache.setCountLimit(2);
 
             cache.set("a", 1, 1);
@@ -152,6 +152,32 @@ describe("cache", function() {
             expect(cache.get("a")).toEqual(1);
             expect(cache.get("b")).toEqual(null);
             expect(cache.get("c")).toEqual(3);
+        });
+
+        it("should handle value replacements in least recently added calculations for eviction", function() {
+            cache.setCountLimit(2);
+
+            cache.set("a", 1, 1);
+            cache.set("b", 2, 1);
+
+            cache.set("a", 1, 1);
+            cache.set("c", 3, 1);
+
+            expect(cache.get("a")).toEqual(1);
+            expect(cache.get("b")).toEqual(null);
+            expect(cache.get("c")).toEqual(3);
+        });
+
+        it("should treat no cost set for an item as 0 cost", function() {
+            cache.setCountLimit(2);
+
+            cache.set("a", 1, 1);
+            cache.set("b", 2);
+            cache.set("c", 3, 10);
+
+            expect(cache.get("a")).toEqual(1);
+            expect(cache.get("b")).toEqual(2);
+            expect(cache.get("c")).toEqual(null);
         });
     });
 
@@ -198,7 +224,7 @@ describe("cache", function() {
             expect(cache.get("c")).toEqual(3);
         });
 
-        it("should evict first in as tie breaker for most costly past limit", function(){
+        it("should evict least recently added as a tie breaker for most costly past limit", function(){
             cache.setTotalCostLimit(4);
 
             cache.set("a", 1, 2);
@@ -209,10 +235,22 @@ describe("cache", function() {
             expect(cache.get("b")).toEqual(2);
             expect(cache.get("c")).toEqual(3);
         });
+
+        it("should treat no cost set for an item as 0 cost", function() {
+            cache.setTotalCostLimit(4);
+
+            cache.set("a", 1, 4);
+            cache.set("b", 2);
+            cache.set("c", 3, 3);
+
+            expect(cache.get("a")).toEqual(null);
+            expect(cache.get("b")).toEqual(2);
+            expect(cache.get("c")).toEqual(3);
+        });
     });
 
     describe("forEach", function() {
-        it("should iterate all key/values", function(){
+        it("should iterate all key/values in order as added", function(){
             cache.set("a", 1, 2);
             cache.set("b", 2, 2);
             cache.set("c", 3, 1);
